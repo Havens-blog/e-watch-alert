@@ -32,3 +32,7 @@ config/config.yaml
 # Local dev SQLite (避开上游提交的 data/w8t.db, 本地运行不弄脏 tracked 文件)
 data/dev-w8t.db
 
+# 本地构建产物（go build 输出）
+watchalert.exe
+watchalert.exe~
+

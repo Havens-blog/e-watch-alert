@@ -18,6 +18,14 @@ func Permission() gin.HandlerFunc {
 			return
 		}
 
+		// eiam 共享会话通道：Auth() 已注入 Role（admin/user），admin 免校验放行（§3.4 角色映射桥接）
+		if role, ok := context.Get("Role"); ok {
+			if roleStr, ok := role.(string); ok && roleStr == models.RoleAdmin {
+				context.Next()
+				return
+			}
+		}
+
 		// 获取用户ID并校验
 		userIdValue, exists := context.Get("UserId")
 		if !exists {
