@@ -69,7 +69,7 @@ func Permission() gin.HandlerFunc {
 		err = c.DB.DB().Model(&models.UserRole{}).Where("id = ?", tenantUserInfo.UserRole).First(&role).Error
 		if err != nil {
 			errMsg := fmt.Sprintf("获取用户 %s 的角色失败: %s", user.UserName, err.Error())
-			logc.Errorf(c.Ctx, errMsg)
+			logc.Error(c.Ctx, errMsg)
 			response.Fail(context, errMsg, "failed")
 			context.Abort()
 			return

@@ -11,6 +11,8 @@ type App struct {
 	Database Database `json:"Database"`
 	Redis    Redis    `json:"Redis"`
 	Jwt      Jwt      `json:"Jwt"`
+	Session  Session  `json:"Session"`
+	Probe    Probe    `json:"Probe"`
 	Jaeger   Jaeger   `json:"Jaeger"`
 }
 
@@ -39,12 +41,34 @@ type Redis struct {
 }
 
 type Jwt struct {
-	Expire int64  `json:"expire"`
-	Secret string `json:"secret"` // JWT 签名密钥(HS256), 必须非空
+	// VerifyOnlyKey 旧本地 JWT 的验签只读副本（过渡期读接口容忍旧 token，禁 Sign；可为空=全新部署无旧 token）
+	VerifyOnlyKey string `json:"verify_only_key"`
+}
+
+// Session 共享会话配置（复用 eiam 同款 ginx/session，键/cookie 须与 eiam 一致）
+type Session struct {
+	SessionEncryptedKey string        `json:"session_encrypted_key" mapstructure:"session_encrypted_key"` // 共享会话 HS256 签名密钥，与 eiam 一致
+	TokenCarrier        string        `json:"token_carrier" mapstructure:"token_carrier"`                 // cookie | token（默认 cookie）
+	Cookie              SessionCookie `json:"cookie" mapstructure:"cookie"`
+}
+
+type SessionCookie struct {
+	Domain   string `json:"domain" mapstructure:"domain"`
+	Name     string `json:"name" mapstructure:"name"`
+	Secure   *bool  `json:"secure" mapstructure:"secure"`
+	HttpOnly *bool  `json:"http_only" mapstructure:"http_only"`
 }
 
 type Jaeger struct {
 	URL string `json:"url"`
+}
+
+// Probe 降级探针配置（tech-design §2.3：探针 A=eiam /health；探针 B=Redis PING）。
+type Probe struct {
+	EiamHealthURL string `json:"eiam_health_url"` // 探针 A 目标：eiam GET /health 完整 URL（空=禁用探针 A）
+	IntervalSec   int    `json:"interval_sec"`    // 探测间隔（秒），默认 10
+	TimeoutSec    int    `json:"timeout_sec"`     // 探测超时（秒），默认 3
+	Hysteresis    int    `json:"hysteresis"`      // 连续翻转阈值（3 失败→degraded、3 成功→recovered），默认 3
 }
 
 var (
@@ -63,10 +87,6 @@ func InitConfig(version string) {
 	var config App
 	if err := v.Unmarshal(&config); err != nil {
 		log.Fatal("配置解析失败:", err)
-	}
-
-	if config.Jwt.Secret == "" {
-		log.Fatal("JWT 签名密钥未配置: 请在 config.yaml 的 jwt.secret 设置非空密钥")
 	}
 
 	Version = version

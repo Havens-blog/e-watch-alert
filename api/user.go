@@ -58,24 +58,19 @@ func (userController userController) GetUserInfo(ctx *gin.Context) {
 	r := new(types.RequestUserQuery)
 
 	Service(ctx, func() (interface{}, interface{}) {
-		token := ctx.Request.Header.Get("Authorization")
-		if token == "" {
-			return nil, errors.New("token is empty")
+		// 共享会话鉴权后由 Auth 中间件注入 UserId（eiam_uid 或 API-Key userId），
+		// 不再读 Authorization 头（旧本地 JWT 已移除）。
+		userIdVal, exists := ctx.Get("UserId")
+		if !exists {
+			return nil, errors.New("userId is empty")
 		}
-
-		userId := jwtUtils.GetUserID(token)
+		userId, ok := userIdVal.(string)
+		if !ok || userId == "" {
+			return nil, errors.New("userId is empty")
+		}
 		r.UserId = userId
 
 		return services.UserService.Info(r)
-	})
-}
-
-func (userController userController) Login(ctx *gin.Context) {
-	r := new(types.RequestUserLogin)
-	BindJson(ctx, r)
-
-	Service(ctx, func() (interface{}, interface{}) {
-		return services.UserService.Login(r)
 	})
 }
 

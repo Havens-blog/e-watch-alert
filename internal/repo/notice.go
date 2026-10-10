@@ -225,7 +225,7 @@ func (nr NoticeRepo) DeleteRecord() error {
 	}
 	err := nr.g.Delete(del)
 	if err != nil {
-		logc.Errorf(context.Background(), err.Error())
+		logc.Error(context.Background(), err.Error())
 		return err
 	}
 	return nil

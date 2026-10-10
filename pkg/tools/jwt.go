@@ -8,7 +8,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-// JwtCustomClaims 注册声明是JWT声明集的结构化版本，仅限于注册声明名称
+// JwtCustomClaims 旧本地 JWT 声明（过渡期仅用于验签，不再签发）
 type JwtCustomClaims struct {
 	ID             string `json:"id"`
 	Name           string `json:"name"`
@@ -19,13 +19,13 @@ type JwtCustomClaims struct {
 const (
 	// TokenType Token 类型
 	TokenType = "bearer"
-	// AppGuardName 颁发者
+	// AppGuardName 颁发者（历史遗留，仅验签阶段保留）
 	AppGuardName = "WatchAlert"
 )
 
-// signKey 返回 JWT 签名密钥, 取自已加载的配置(config.Application.Jwt.Secret)。
-func signKey() []byte {
-	return []byte(config.Application.Jwt.Secret)
+// verifyKey 返回旧本地 JWT 的验签只读副本（仅 Parse/校验，禁 Sign）。
+func verifyKey() []byte {
+	return []byte(config.Application.Jwt.VerifyOnlyKey)
 }
 
 func (j JwtCustomClaims) Valid() error {
@@ -35,34 +35,17 @@ func (j JwtCustomClaims) Valid() error {
 	return nil
 }
 
-// ParseToken 解析token
+// ParseToken 解析旧本地 JWT（验签只读副本）。
 func ParseToken(tokenStr string) (JwtCustomClaims, error) {
 	iJwtCustomClaims := JwtCustomClaims{}
 	token, err := jwt.ParseWithClaims(tokenStr, &iJwtCustomClaims, func(token *jwt.Token) (interface{}, error) {
-		return signKey(), nil
+		return verifyKey(), nil
 	})
 
 	if err == nil && !token.Valid {
 		err = errors.New("invalid Token")
 	}
 	return iJwtCustomClaims, err
-}
-
-// GenerateToken 生成Token
-func GenerateToken(userId, userName, password string) (string, error) {
-	// 初始化
-	iJwtCustomClaims := JwtCustomClaims{
-		ID:   userId,
-		Name: userName,
-		Pass: password,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Unix() + config.Application.Jwt.Expire,
-			IssuedAt:  time.Now().Unix(),
-			Issuer:    AppGuardName,
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, iJwtCustomClaims)
-	return token.SignedString(signKey())
 }
 
 func GetUser(tokenStr string) string {

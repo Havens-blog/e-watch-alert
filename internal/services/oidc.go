@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"watchAlert/config"
 	"watchAlert/internal/ctx"
 	"watchAlert/internal/models"
 	"watchAlert/internal/types"
@@ -25,7 +24,6 @@ type oidcService struct {
 type InterOidcService interface {
 	GetOidcInfo() (interface{}, interface{})
 	CallBack(ctx *gin.Context, req interface{}) (interface{}, interface{})
-	CookieConvertToken(ctx *gin.Context) (interface{}, interface{})
 }
 
 func newInterOidcService(ctx *ctx.Context) InterOidcService {
@@ -112,54 +110,4 @@ func (os oidcService) CallBack(ctx *gin.Context, req interface{}) (interface{}, 
 	ctx.Redirect(http.StatusTemporaryRedirect, "/")
 
 	return nil, nil
-}
-
-func (os oidcService) CookieConvertToken(ctx *gin.Context) (interface{}, interface{}) {
-	setting, err := os.ctx.DB.Setting().Get()
-	if err != nil {
-		return nil, err
-	}
-
-	accessToken, err := ctx.Cookie("token")
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := oidc.GetOpenIDConfiguration(setting.OidcConfig.UpperURI)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := oidc.GetCurrentUser(cfg.UserinfoEndpoint, accessToken)
-	if err != nil {
-		return nil, err
-	}
-
-	if result == nil {
-		return nil, fmt.Errorf("获取用户信息失败")
-	}
-
-	data, _, err := os.ctx.DB.User().Get("", result.Id, "", "")
-	if err != nil {
-		return nil, err
-	}
-
-	tokenData, err := tools.GenerateToken(data.UserId, data.UserName, data.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	r := &types.RequestUserLogin{
-		Identifier: data.UserName,
-		Password:   tools.GenerateHashPassword(types.OidcPassword),
-	}
-
-	duration := time.Duration(config.Application.Jwt.Expire) * time.Second
-	os.ctx.Redis.Redis().Set("uid-"+data.UserId, tools.JsonMarshalToString(r), duration)
-
-	return models.ResponseLoginInfo{
-		Token:      tokenData,
-		Identifier: data.UserName,
-		UserId:     data.UserId,
-	}, nil
 }

@@ -5,13 +5,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"time"
-	"watchAlert/config"
 	"watchAlert/internal/ctx"
 	"watchAlert/internal/models"
 	"watchAlert/internal/types"
 	"watchAlert/pkg/tools"
-
-	"github.com/zeromicro/go-zero/core/logc"
 )
 
 type userService struct {
@@ -22,7 +19,6 @@ type InterUserService interface {
 	List(req interface{}) (interface{}, interface{})
 	Check(req interface{}) (interface{}, interface{})
 	Info(req interface{}) (interface{}, interface{})
-	Login(req interface{}) (interface{}, interface{})
 	Update(req interface{}) (interface{}, interface{})
 	Register(req interface{}) (interface{}, interface{})
 	Delete(req interface{}) (interface{}, interface{})
@@ -66,67 +62,6 @@ func (us userService) Info(req interface{}) (interface{}, interface{}) {
 	}
 
 	return data, nil
-}
-
-func (us userService) Login(req interface{}) (interface{}, interface{}) {
-	r := req.(*types.RequestUserLogin)
-	originalPassword := r.Password
-	r.Password = tools.GenerateHashPassword(r.Password)
-
-	var data models.Member
-	var exist = true
-	// 1. 验证用户名
-	data, exist, _ = us.ctx.DB.User().Get("", r.Identifier, "", "")
-	if !exist {
-		// 2. 验证邮箱
-		data, exist, _ = us.ctx.DB.User().Get("", "", r.Identifier, "")
-		if !exist {
-			// 3. 验证手机号
-			data, exist, _ = us.ctx.DB.User().Get("", "", "", r.Identifier)
-			if !exist {
-				return nil, fmt.Errorf("用户不存在")
-			}
-		}
-	}
-
-	setting, err := us.ctx.DB.Setting().Get()
-	if err != nil {
-		return nil, err
-	}
-	switch data.CreateBy {
-	case "LDAP":
-		if *setting.AuthType == models.SettingLdapAuth {
-			err := LdapService.Login(r.Identifier, originalPassword)
-			if err != nil {
-				logc.Error(us.ctx.Ctx, fmt.Sprintf("LDAP 用户登陆失败, err: %s", err.Error()))
-				return nil, fmt.Errorf("LDAP 用户登陆失败, err: %s", err.Error())
-			}
-		} else {
-			logc.Error(us.ctx.Ctx, "请先开启 LDAP 功能!")
-			return nil, fmt.Errorf("请先开启 LDAP 功能!")
-		}
-	case "OIDC":
-		logc.Error(us.ctx.Ctx, "请使用 OIDC 登录!")
-		return nil, fmt.Errorf("请使用 OIDC 登录!")
-	default:
-		if data.Password != r.Password {
-			return nil, fmt.Errorf("密码错误")
-		}
-	}
-
-	tokenData, err := tools.GenerateToken(data.UserId, r.Identifier, r.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	duration := time.Duration(config.Application.Jwt.Expire) * time.Second
-	us.ctx.Redis.Redis().Set("uid-"+data.UserId, tools.JsonMarshalToString(r), duration)
-
-	return models.ResponseLoginInfo{
-		Token:      tokenData,
-		Identifier: r.Identifier,
-		UserId:     data.UserId,
-	}, nil
 }
 
 func (us userService) Register(req interface{}) (interface{}, interface{}) {

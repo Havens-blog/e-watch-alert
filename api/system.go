@@ -20,9 +20,3 @@ func (systemController systemController) CallBack(ctx *gin.Context) {
 
 	Service(ctx, func() (interface{}, interface{}) { return services.OidcService.CallBack(ctx, r) })
 }
-
-func (systemController systemController) CookieConvertToken(ctx *gin.Context) {
-	Service(ctx, func() (interface{}, interface{}) {
-		return services.OidcService.CookieConvertToken(ctx)
-	})
-}

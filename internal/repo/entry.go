@@ -44,6 +44,7 @@ type (
 		PrometheusTargetGroup() InterPrometheusTargetGroupRepo
 		PrometheusTarget() InterPrometheusTargetRepo
 		PrometheusTargetVersion() InterPrometheusTargetVersionRepo
+		RoleBinding() InterRoleBindingRepo
 	}
 )
 
@@ -110,3 +111,4 @@ func (e *entryRepo) PrometheusTarget() InterPrometheusTargetRepo {
 func (e *entryRepo) PrometheusTargetVersion() InterPrometheusTargetVersionRepo {
 	return newPrometheusTargetVersionInterface(e.db, e.g)
 }
+func (e *entryRepo) RoleBinding() InterRoleBindingRepo { return newRoleBindingInterface(e.db, e.g) }

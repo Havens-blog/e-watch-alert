@@ -86,6 +86,7 @@ func NewDBClient(dbcfg DBConfig) *gorm.DB {
 		&models.PrometheusTargetGroup{},
 		&models.PrometheusTarget{},
 		&models.PrometheusTargetVersion{},
+		&models.RoleBinding{},
 	)
 	if err != nil {
 		logc.Error(context.Background(), err.Error())

@@ -10,6 +10,7 @@ import (
 	"watchAlert/config"
 	"watchAlert/internal/cache"
 	"watchAlert/internal/ctx"
+	"watchAlert/internal/health"
 	"watchAlert/internal/middleware"
 	"watchAlert/internal/models"
 	"watchAlert/internal/repo"
@@ -17,6 +18,7 @@ import (
 	v1 "watchAlert/internal/routers/v1"
 	"watchAlert/internal/services"
 	"watchAlert/pkg/ai"
+	"watchAlert/pkg/client"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -65,6 +67,18 @@ func initRouter(engine *gin.Engine) {
 }
 
 func initBasic() {
+	// 初始化共享会话 provider（复用 eiam 同款 ginx/session，main 进程启动即注入，供 middleware.Auth 使用）
+	middleware.InitSession(client.InitSession())
+
+	// 初始化降级探针（探针 A=eiam /health 后台轮询；探针 B=Auth() 内 Redis PING 记录）
+	health.Init(
+		config.Application.Probe.EiamHealthURL,
+		config.Application.Probe.IntervalSec,
+		config.Application.Probe.TimeoutSec,
+		config.Application.Probe.Hysteresis,
+	)
+	health.Start(context.Background())
+
 	// 初始化数据库和缓存
 	dbRepo := repo.NewRepoEntry()
 	rCache := cache.NewEntryCache()

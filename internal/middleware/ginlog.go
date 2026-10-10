@@ -47,7 +47,7 @@ func LoggingMiddleware() gin.HandlerFunc {
 		// 读取body
 		bodyBytes, err := ioutil.ReadAll(c.Request.Body)
 		if err != nil {
-			logc.Errorf(context.Background(), err.Error())
+			logc.Error(context.Background(), err.Error())
 			c.Abort()
 			return
 		}

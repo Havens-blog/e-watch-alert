@@ -14,7 +14,6 @@ func Router(engine *gin.Engine) {
 		{
 			api.DashboardInfoController.API(v1)
 			system.POST("register", api.UserController.Register)
-			system.POST("login", api.UserController.Login)
 			system.GET("checkUser", api.UserController.CheckUser)
 			system.GET("userInfo", middleware.Auth(), api.UserController.GetUserInfo)
 		}
@@ -57,7 +56,15 @@ func Router(engine *gin.Engine) {
 		{
 			oidc.GET("oidcInfo", api.SystemController.GetOidcInfo)
 			oidc.GET("callback", api.SystemController.CallBack)
-			oidc.GET("token", api.SystemController.CookieConvertToken)
+		}
+
+		// 平台接入鉴权/迁移管理接口（/api/watchalert/*）
+		watchalert := v1.Group("watchalert")
+		{
+			api.RoleBindingController.API(watchalert)
+			watchalert.GET("auth-health", api.AuthHealthController.Health)
+			watchalert.GET("export/config", middleware.Auth(), api.MigrationController.ExportConfig)
+			watchalert.POST("import/config", middleware.Auth(), api.MigrationController.ImportConfig)
 		}
 	}
 }

@@ -23,7 +23,23 @@ Redis:
   database: 0
 
 Jwt:
-  # 失效时间
-  expire: 18000
-  # JWT 签名密钥(HS256), 必须非空且保密, 请改为随机长字符串
-  secret: "change-me"
+  # 旧本地 JWT 的验签只读副本(过渡期读接口容忍旧 token, 禁 Sign)。全新部署无旧 token 可留空。
+  verify_only_key: "change-me"
+
+Session:
+  # 共享会话签名密钥(HS256), 必须与 eiam config 完全一致, 请改为随机长字符串
+  session_encrypted_key: "change-me"
+  # cookie | token（默认 cookie 主 + Authorization 头兜底）
+  token_carrier: cookie
+  cookie:
+    domain: localhost
+    name: ecmdb-token-key
+    secure: false
+    http_only: true
+
+Probe:
+  # 探针 A：eiam 健康检查（GET /health）。空=禁用探针 A
+  eiam_health_url: "http://eiam:9000/health"
+  interval_sec: 10
+  timeout_sec: 3
+  hysteresis: 3
