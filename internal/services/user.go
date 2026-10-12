@@ -23,6 +23,7 @@ type InterUserService interface {
 	Register(req interface{}) (interface{}, interface{})
 	Delete(req interface{}) (interface{}, interface{})
 	ChangePass(req interface{}) (interface{}, interface{})
+	SyncLocal(req interface{}) (interface{}, interface{})
 }
 
 func newInterUserService(ctx *ctx.Context) InterUserService {
@@ -167,6 +168,30 @@ func (us userService) Update(req interface{}) (interface{}, interface{}) {
 	}
 
 	us.ctx.DB.User().ChangeCache(r.UserId)
+
+	return nil, nil
+}
+
+// SyncLocal 把 eiam 用户同步到 WatchAlert 本地扩展表（members）。
+// 人员身份以 eiam 为唯一来源，本地表只承载应用侧扩展属性（join_duty 等）。
+func (us userService) SyncLocal(req interface{}) (interface{}, interface{}) {
+	r := req.(*types.RequestUserSyncLocal)
+	if len(r.Users) == 0 {
+		return nil, nil
+	}
+
+	members := make([]models.Member, 0, len(r.Users))
+	for _, u := range r.Users {
+		members = append(members, models.Member{
+			UserId:   u.UserId,
+			UserName: u.UserName,
+			JoinDuty: u.JoinDuty,
+		})
+	}
+
+	if err := us.ctx.DB.User().SyncLocal(members); err != nil {
+		return nil, err
+	}
 
 	return nil, nil
 }

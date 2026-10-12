@@ -31,6 +31,7 @@ func (userController userController) API(gin *gin.RouterGroup) {
 		a.POST("userUpdate", userController.Update)
 		a.POST("userDelete", userController.Delete)
 		a.POST("userChangePass", userController.ChangePass)
+		a.POST("userSyncLocal", userController.SyncLocal)
 	}
 
 	b := gin.Group("user")
@@ -101,6 +102,16 @@ func (userController userController) Delete(ctx *gin.Context) {
 
 	Service(ctx, func() (interface{}, interface{}) {
 		return services.UserService.Delete(r)
+	})
+}
+
+// SyncLocal 同步 eiam 用户到本地扩展表（承载 join_duty 等应用侧扩展属性）。
+func (userController userController) SyncLocal(ctx *gin.Context) {
+	r := new(types.RequestUserSyncLocal)
+	BindJson(ctx, r)
+
+	Service(ctx, func() (interface{}, interface{}) {
+		return services.UserService.SyncLocal(r)
 	})
 }
 

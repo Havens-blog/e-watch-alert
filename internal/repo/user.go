@@ -2,7 +2,9 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 	"watchAlert/internal/models"
 	"watchAlert/pkg/client"
 	"watchAlert/pkg/tools"
@@ -23,6 +25,7 @@ type (
 		GetUserByRole(role string) ([]models.Member, error)
 		Create(r models.Member) error
 		Update(r models.Member) error
+		SyncLocal(users []models.Member) error
 		Delete(userId string) error
 		ChangeCache(userId string)
 		ChangePass(userId, password string) error
@@ -137,6 +140,50 @@ func (ur UserRepo) Update(r models.Member) error {
 	err := ur.g.Updates(u)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// SyncLocal 确保 eiam 用户在本地 members 表存在扩展记录（按 eiam uid 关联）。
+// 本地表只承载应用侧扩展属性（join_duty 等），身份信息以 eiam 为准。
+// JoinDuty 为空时保持原值（仅确保记录存在）；"true"/"false" 时显式更新开关。
+func (ur UserRepo) SyncLocal(users []models.Member) error {
+	for _, u := range users {
+		if u.UserId == "" {
+			continue
+		}
+
+		var exist models.Member
+		err := ur.db.Where("user_id = ?", u.UserId).First(&exist).Error
+		switch {
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			row := models.Member{
+				UserId:   u.UserId,
+				UserName: u.UserName,
+				Role:     "app",
+				JoinDuty: u.JoinDuty,
+				CreateBy: "eiam",
+				CreateAt: time.Now().Unix(),
+			}
+			if err = ur.db.Create(&row).Error; err != nil {
+				return err
+			}
+		case err != nil:
+			return err
+		default:
+			updates := map[string]interface{}{"user_name": u.UserName}
+			if u.JoinDuty != "" {
+				updates["join_duty"] = u.JoinDuty
+			}
+			if err = ur.db.Model(&models.Member{}).
+				Where("user_id = ?", u.UserId).
+				Updates(updates).Error; err != nil {
+				return err
+			}
+		}
+
+		ur.ChangeCache(u.UserId)
 	}
 
 	return nil
