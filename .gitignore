@@ -36,3 +36,6 @@ data/dev-w8t.db
 watchalert.exe
 watchalert.exe~
 
+# 迁移备份（数据库数据快照，仅本地留存用于回滚，不提交）
+scripts/*_backup.json
+
