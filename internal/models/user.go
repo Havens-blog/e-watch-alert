@@ -14,8 +14,3 @@ type Member struct {
 	Tenants    []string `json:"tenants" gorm:"tenants;serializer:json"`
 }
 
-type ResponseLoginInfo struct {
-	Token      string `json:"token"`
-	Identifier string `json:"identifier"`
-	UserId     string `json:"userId"`
-}

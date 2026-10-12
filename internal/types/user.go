@@ -1,10 +1,5 @@
 package types
 
-type RequestUserLogin struct {
-	Identifier string `json:"identifier"`
-	Password   string `json:"password"`
-}
-
 type RequestUserCreate struct {
 	UserId     string   `json:"userid"`
 	UserName   string   `json:"username"`
