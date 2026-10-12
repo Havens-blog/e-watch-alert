@@ -6,7 +6,6 @@ import (
 	"watchAlert/internal/services"
 	"watchAlert/internal/types"
 	"watchAlert/pkg/response"
-	utils "watchAlert/pkg/tools"
 
 	"github.com/gin-gonic/gin"
 )
@@ -53,13 +52,12 @@ func (alertEventController alertEventController) ProcessAlertEvent(ctx *gin.Cont
 	r.TenantId = tid.(string)
 	r.Time = time.Now().Unix()
 
-	tokenStr := ctx.Request.Header.Get("Authorization")
-	if tokenStr == "" {
+	// 会话化后由 Auth 中间件注入操作人，不再解析本地 JWT。
+	r.Username = middleware.OperatorName(ctx)
+	if r.Username == "" {
 		response.Fail(ctx, "未知的用户", "failed")
 		return
 	}
-
-	r.Username = utils.GetUser(tokenStr)
 
 	Service(ctx, func() (interface{}, interface{}) {
 		return services.EventService.ProcessAlertEvent(r)
@@ -122,9 +120,8 @@ func (alertEventController alertEventController) AddComment(ctx *gin.Context) {
 	tid, _ := ctx.Get("TenantID")
 	r.TenantId = tid.(string)
 
-	token := ctx.Request.Header.Get("Authorization")
-	r.Username = utils.GetUser(token)
-	r.UserId = utils.GetUserID(token)
+	r.Username = middleware.OperatorName(ctx)
+	r.UserId = middleware.OperatorID(ctx)
 
 	Service(ctx, func() (interface{}, interface{}) {
 		return services.EventService.AddComment(r)

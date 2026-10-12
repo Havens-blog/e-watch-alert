@@ -1,11 +1,9 @@
 package api
 
 import (
-	"errors"
 	middleware "watchAlert/internal/middleware"
 	"watchAlert/internal/services"
 	"watchAlert/internal/types"
-	"watchAlert/pkg/tools"
 
 	"github.com/gin-gonic/gin"
 )
@@ -79,11 +77,8 @@ func (probingController probingController) Create(ctx *gin.Context) {
 	BindJson(ctx, r)
 
 	Service(ctx, func() (interface{}, interface{}) {
-		tokenStr := ctx.Request.Header.Get("Authorization")
-		if len(tokenStr) <= 0 {
-			return nil, errors.New("用户未登录")
-		}
-		r.UpdateBy = tools.GetUser(tokenStr)
+		// 会话化后由 Auth 中间件注入操作人，不再解析本地 JWT。
+		r.UpdateBy = middleware.OperatorName(ctx)
 
 		tid, _ := ctx.Get("TenantID")
 		r.TenantId = tid.(string)
@@ -97,11 +92,7 @@ func (probingController probingController) Update(ctx *gin.Context) {
 	BindJson(ctx, r)
 
 	Service(ctx, func() (interface{}, interface{}) {
-		tokenStr := ctx.Request.Header.Get("Authorization")
-		if len(tokenStr) <= 0 {
-			return nil, errors.New("用户未登录")
-		}
-		r.UpdateBy = tools.GetUser(tokenStr)
+		r.UpdateBy = middleware.OperatorName(ctx)
 
 		tid, _ := ctx.Get("TenantID")
 		r.TenantId = tid.(string)

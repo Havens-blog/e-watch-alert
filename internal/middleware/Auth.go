@@ -199,3 +199,14 @@ func OperatorName(c *gin.Context) string {
 	}
 	return ""
 }
+
+// OperatorID 取当前请求操作人的用户 ID（Auth 中间件注入的 eiam uid 字符串）。
+// 用于需要用户 ID 而非用户名的场景（API Key 属主、事件评论人等）。
+func OperatorID(c *gin.Context) string {
+	if v, ok := c.Get("UserId"); ok {
+		if id, ok := v.(string); ok {
+			return id
+		}
+	}
+	return ""
+}

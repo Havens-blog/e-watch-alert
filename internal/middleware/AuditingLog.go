@@ -16,9 +16,9 @@ import (
 
 func AuditingLog() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		// Operation user
+		// Operation user（会话化后由 Auth 中间件注入，不再解析本地 JWT）
 		var username string
-		createBy := tools.GetUser(context.Request.Header.Get("Authorization"))
+		createBy := OperatorName(context)
 		if createBy != "" {
 			username = createBy
 		} else {
