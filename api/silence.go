@@ -5,7 +5,6 @@ import (
 	middleware "watchAlert/internal/middleware"
 	"watchAlert/internal/services"
 	"watchAlert/internal/types"
-	jwtUtils "watchAlert/pkg/tools"
 )
 
 type silenceController struct{}
@@ -48,7 +47,7 @@ func (silenceController silenceController) Create(ctx *gin.Context) {
 	tid, _ := ctx.Get("TenantID")
 	r.TenantId = tid.(string)
 
-	user := jwtUtils.GetUser(ctx.Request.Header.Get("Authorization"))
+	user := middleware.OperatorName(ctx)
 	r.UpdateBy = user
 
 	Service(ctx, func() (interface{}, interface{}) {
@@ -63,7 +62,7 @@ func (silenceController silenceController) Update(ctx *gin.Context) {
 	tid, _ := ctx.Get("TenantID")
 	r.TenantId = tid.(string)
 
-	user := jwtUtils.GetUser(ctx.Request.Header.Get("Authorization"))
+	user := middleware.OperatorName(ctx)
 	r.UpdateBy = user
 
 	Service(ctx, func() (interface{}, interface{}) {

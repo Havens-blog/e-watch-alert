@@ -14,7 +14,6 @@ import (
 	"watchAlert/internal/types"
 	"watchAlert/pkg/provider"
 	"watchAlert/pkg/tools"
-	jwtUtils "watchAlert/pkg/tools"
 
 	"github.com/gin-gonic/gin"
 )
@@ -74,7 +73,7 @@ func (datasourceController datasourceController) Create(ctx *gin.Context) {
 	BindJson(ctx, r)
 
 	Service(ctx, func() (interface{}, interface{}) {
-		userName := jwtUtils.GetUser(ctx.Request.Header.Get("Authorization"))
+		userName := middleware.OperatorName(ctx)
 		r.UpdateBy = userName
 
 		tid, _ := ctx.Get("TenantID")
@@ -113,7 +112,7 @@ func (datasourceController datasourceController) Update(ctx *gin.Context) {
 	BindJson(ctx, r)
 
 	Service(ctx, func() (interface{}, interface{}) {
-		userName := jwtUtils.GetUser(ctx.Request.Header.Get("Authorization"))
+		userName := middleware.OperatorName(ctx)
 		r.UpdateBy = userName
 
 		tid, _ := ctx.Get("TenantID")

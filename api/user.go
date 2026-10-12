@@ -5,7 +5,6 @@ import (
 	middleware "watchAlert/internal/middleware"
 	"watchAlert/internal/services"
 	"watchAlert/internal/types"
-	jwtUtils "watchAlert/pkg/tools"
 
 	"github.com/gin-gonic/gin"
 )
@@ -80,7 +79,7 @@ func (userController userController) Register(ctx *gin.Context) {
 	BindJson(ctx, r)
 
 	Service(ctx, func() (interface{}, interface{}) {
-		createUser := jwtUtils.GetUser(ctx.Request.Header.Get("Authorization"))
+		createUser := middleware.OperatorName(ctx)
 		r.CreateBy = createUser
 
 		return services.UserService.Register(r)
@@ -129,7 +128,12 @@ func (userController userController) ChangePass(ctx *gin.Context) {
 	BindJson(ctx, r)
 
 	Service(ctx, func() (interface{}, interface{}) {
-		userID := jwtUtils.GetUserID(ctx.Request.Header.Get("Authorization"))
+		// 会话化后由 Auth 中间件注入 UserId（eiam uid 字符串），不再解析本地 JWT。
+		userIDVal, exists := ctx.Get("UserId")
+		if !exists {
+			return nil, errors.New("UserID 不能为空")
+		}
+		userID, _ := userIDVal.(string)
 		if userID == "" {
 			return nil, errors.New("UserID 不能为空")
 		}

@@ -73,6 +73,7 @@ func Auth() gin.HandlerFunc {
 				} else {
 					// 读接口容忍旧 JWT 至过期
 					c.Set("UserId", uid)
+					c.Set("UserName", tools.GetUser(c.GetHeader("Authorization")))
 					c.Next()
 				}
 				return
@@ -106,11 +107,16 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		// 5. 注入 UserId（兼容下游 string 断言）+ Role + EiamUid
+		// 5. 注入 UserId（兼容下游 string 断言）+ UserName + Role + EiamUid
 		// 人员用户 id 已统一为 eiam uid（members.user_id 迁移到 eiam uid），
 		// 不再做 admin -> 本地 "admin" 的特殊映射，admin 即 eiam uid 字符串（如 "1"）。
 		userId := strconv.FormatInt(uid, 10)
 		c.Set("UserId", userId)
+		// 操作人用户名（eiam 登录时写入会话 claims 的 username），
+		// 供审计字段 update_by / create_by 使用，替代已废弃的本地 JWT 解析。
+		if username, uErr := sess.Get(c.Request.Context(), "username").AsString(); uErr == nil && username != "" {
+			c.Set("UserName", username)
+		}
 		c.Set("Role", rb.Role)
 		c.Set("EiamUid", uid)
 
@@ -175,4 +181,21 @@ func IsApiKeyValid(ctx *ctx.Context, apiKey string) (string, bool) {
 		return "无效的API密钥", false
 	}
 	return apiKeyModel.UserId, true
+}
+
+// OperatorName 取当前请求的操作人用户名，用于审计字段（update_by / create_by 等）。
+// 会话化后本地 JWT 已废弃，不再从 Authorization 头解析；
+// 用户名取 Auth 中间件注入的 UserName，缺失时退化为 eiam uid 字符串，保证审计字段不为空。
+func OperatorName(c *gin.Context) string {
+	if v, ok := c.Get("UserName"); ok {
+		if name, ok := v.(string); ok && name != "" {
+			return name
+		}
+	}
+	if v, ok := c.Get("UserId"); ok {
+		if id, ok := v.(string); ok {
+			return id
+		}
+	}
+	return ""
 }
