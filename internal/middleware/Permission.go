@@ -41,8 +41,8 @@ func Permission() gin.HandlerFunc {
 			return
 		}
 
-		// 超级管理员免校验通道
-		if userId == "admin" {
+		// 超级管理员免校验通道（admin 即 eiam uid "1"，与 members.user_id 对齐）
+		if userId == "1" {
 			context.Next()
 			return
 		}

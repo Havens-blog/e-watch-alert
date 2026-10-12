@@ -8,7 +8,6 @@ import (
 
 	"watchAlert/internal/ctx"
 	"watchAlert/internal/health"
-	"watchAlert/internal/models"
 	"watchAlert/pkg/response"
 	"watchAlert/pkg/tools"
 
@@ -108,12 +107,9 @@ func Auth() gin.HandlerFunc {
 		}
 
 		// 5. 注入 UserId（兼容下游 string 断言）+ Role + EiamUid
-		// admin 角色映射到本地超级管理员 "admin"（业务层按 members.user_id 查询），
-		// 其余角色暂以 eiam_uid 字符串注入（后续按需映射本地成员）
+		// 人员用户 id 已统一为 eiam uid（members.user_id 迁移到 eiam uid），
+		// 不再做 admin -> 本地 "admin" 的特殊映射，admin 即 eiam uid 字符串（如 "1"）。
 		userId := strconv.FormatInt(uid, 10)
-		if rb.Role == models.RoleAdmin {
-			userId = "admin"
-		}
 		c.Set("UserId", userId)
 		c.Set("Role", rb.Role)
 		c.Set("EiamUid", uid)

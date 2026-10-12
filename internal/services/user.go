@@ -185,7 +185,7 @@ func (us userService) Delete(req interface{}) (interface{}, interface{}) {
 
 func (us userService) ChangePass(req interface{}) (interface{}, interface{}) {
 	r := req.(*types.RequestUserChangePassword)
-	if r.UserId == "admin" {
+	if r.UserId == "1" {
 		return nil, fmt.Errorf("admin用户密码禁止通过接口修改")
 	}
 

@@ -46,7 +46,7 @@ func (tr TenantRepo) Create(t models.Tenant) error {
 
 	var users = []models.TenantUser{
 		{
-			UserID:   "admin",
+			UserID:   "1",
 			UserName: "admin",
 		},
 	}

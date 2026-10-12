@@ -110,9 +110,9 @@ func (ur UserRepo) Create(r models.Member) error {
 		return err
 	}
 
-	if r.UserId == "admin" {
-		// 租户真相源已切到 eiam：admin 默认归属 eiam 的 default-tenant（id=2）
-		r.Tenants = append(r.Tenants, "2")
+	if r.UserId == "1" {
+		// 人员用户 id 已统一为 eiam uid：admin 即 eiam uid "1"，默认归属嘉立创租户（jlc id=3）
+		r.Tenants = append(r.Tenants, "3")
 		err = ur.g.Updates(Updates{
 			Table: models.Member{},
 			Where: map[string]interface{}{
